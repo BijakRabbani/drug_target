@@ -117,7 +117,18 @@ def parse_pssm(file):
     result.index = index
     result.columns = columns
     result = result.iloc[:,0:20] 
-    return result        
+    return result.T        
+
+def pssm_padding(pssm, max_seq):
+    if len(pssm.columns) < max_seq:
+        padding = pd.DataFrame(np.zeros([20, 1200-len(pssm.columns)]), index = pssm.index)
+        result = pd.concat([pssm,padding],1)
+
+    else:
+        result = pssm.iloc[:,0:max_seq]
+    
+    return result.values
+
 
 ## ######################## ##
 #
@@ -217,14 +228,15 @@ class DataSet(object):
     print("Read %s start" % fpath)
 
     ligands = json.load(open(fpath+"ligands_can.txt"), object_pairs_hook=OrderedDict)
-    proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
-    protein_keys = [i for i in proteins.keys()] 
+    #proteins = json.load(open(fpath+"proteins.txt"), object_pairs_hook=OrderedDict)
+    #protein_keys = [i for i in proteins.keys()] 
     
     protein_list = os.listdir(fpath+'pssm')
-    
+    proteins = []
     for queryID in tqdm(range(len(protein_list)), ncols=80):
         with open(fpath + 'pssm/' + str(queryID) + '_pssm.txt') as file:
-            proteins[protein_keys[queryID]] = parse_pssm(file)
+             pssm_temp = parse_pssm(file)
+             proteins.append(pssm_padding(pssm_temp))
         
     
     Y = pickle.load(open(fpath + "Y","rb"), encoding='latin1') ### TODO: read from raw
